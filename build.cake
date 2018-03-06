@@ -12,6 +12,11 @@
 // MODULES
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+// NAMESPACES
+//////////////////////////////////////////////////////////////////////
+
+using System.Diagnostics;
 
 //////////////////////////////////////////////////////////////////////
 // DIRECTIVES
@@ -22,21 +27,40 @@
 //////////////////////////////////////////////////////////////////////
 
 var target = Argument("target", "Default");
+var script= "'if ($true) { return $a - $b }' | Out-Host";
 
 //////////////////////////////////////////////////////////////////////
 // TASK TARGETS
 //////////////////////////////////////////////////////////////////////
 
-Task("Default")  
+Task("RunScriptWithProcess")  
+    .IsDependeeOf("Default")
+    .Does(() =>
+{
+    Process pesterProc = new Process();
+            
+    pesterProc.StartInfo.FileName = "powershell.exe";
+    pesterProc.StartInfo.CreateNoWindow = true;
+    pesterProc.StartInfo.UseShellExecute = false;
+    pesterProc.StartInfo.RedirectStandardOutput=true;
+    pesterProc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+    pesterProc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+    pesterProc.StartInfo.Arguments = $"-command \"{script}\"";
+    pesterProc.Start();
+    pesterProc.WaitForExit();
+    Information(pesterProc.StandardOutput.ReadToEnd());
+});
+Task("RunScriptWithAddin")  
+    .IsDependeeOf("Default")
     .Does(() =>
 {
     var settings = new PowershellSettings {
         OutputToAppConsole = false,
         LogOutput = false
     };
-    var script= "'if ($true) { return $a - $b }' | Out-Host";
     var results = StartPowershellScript(script, settings);
 });
+Task("Default");;
 
 
 //////////////////////////////////////////////////////////////////////
